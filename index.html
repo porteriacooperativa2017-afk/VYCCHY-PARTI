@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VYCCHY DJ Mixer & Party Lights</title>
+  <style>
+    :root {
+      --neon-pink: #ff007f;
+      --neon-cyan: #00f3ff;
+      --neon-purple: #9d00ff;
+      --neon-green: #00ff66;
+      --bg-dark: #07070e;
+      --panel-bg: rgba(18, 18, 37, 0.85);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+      transition: background 0.1s ease;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* Animaciones de Luces Boliche */
+    @keyframes party-strobe {
+      0% { background-color: #07070e; box-shadow: inset 0 0 100px var(--neon-pink); }
+      25% { background-color: #12001a; box-shadow: inset 0 0 150px var(--neon-cyan); }
+      50% { background-color: #00121a; box-shadow: inset 0 0 100px var(--neon-green); }
+      75% { background-color: #1a000c; box-shadow: inset 0 0 150px var(--neon-purple); }
+      100% { background-color: #07070e; box-shadow: inset 0 0 100px var(--neon-pink); }
+    }
+
+    @keyframes flash-fast {
+      0%, 100% { opacity: 1; filter: hue-rotate(0deg); }
+      50% { opacity: 0.3; filter: hue-rotate(180deg); }
+    }
+
+    body.lights-active {
+      animation: party-strobe 1.5s infinite alternate;
+    }
+
+    body.lights-fast {
+      animation: party-strobe 0.4s infinite linear, flash-fast 0.2s infinite alternate;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: #fff;
+      text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
+    }
+
+    /* Master Controls & Lights Bar */
+    .master-bar {
+      width: 100%;
+      max-width: 1100px;
+      background: var(--panel-bg);
+      border: 1px solid var(--neon-purple);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      justify-content: space-around;
+      align-items: center;
+      backdrop-filter: blur(5px);
+    }
+
+    .master-group {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .mixer-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      max-width: 1100px;
+      width: 100%;
+    }
+
+    .deck {
+      background: var(--panel-bg);
+      border: 2px solid var(--neon-purple);
+      border-radius: 15px;
+      padding: 15px;
+      flex: 1;
+      min-width: 320px;
+      backdrop-filter: blur(5px);
+    }
+
+    .deck-a { border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 243, 255, 0.2); }
+    .deck-b { border-color: var(--neon-pink); box-shadow: 0 0 15px rgba(255, 0, 127, 0.2); }
+
+    .video-wrapper {
+      position: relative;
+      width: 100%;
+      padding-bottom: 56.25%;
+      height: 0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-bottom: 15px;
+      background: #000;
+    }
+
+    .video-wrapper iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+    }
+
+    .url-input {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 10px;
+      background: #121225;
+      border: 1px solid var(--neon-purple);
+      border-radius: 5px;
+      color: #fff;
+      outline: none;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .search-row .url-input {
+      margin-bottom: 0;
+    }
+
+    .search-btn {
+      flex: 0 0 auto;
+      white-space: nowrap;
+    }
+
+    .search-results {
+      display: none;
+      position: fixed;
+      z-index: 20;
+      top: 8vh;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(680px, calc(100vw - 30px));
+      max-height: 84vh;
+      overflow-y: auto;
+      border: 2px solid var(--neon-cyan);
+      border-radius: 10px;
+      background: #0d0d1c;
+      box-shadow: 0 0 35px rgba(0, 243, 255, 0.35);
+    }
+
+    .search-results.visible { display: block; }
+
+    .search-result {
+      width: 100%;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      padding: 8px;
+      border: 0;
+      border-bottom: 1px solid #292943;
+      background: transparent;
+      color: #fff;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .search-result:last-child { border-bottom: 0; }
+    .search-result:hover { background: #1b1b35; }
+    .search-result img { width: 80px; height: 45px; object-fit: cover; }
+    .search-result span { font-size: 0.85rem; }
+
+    .search-modal-header {
+      position: sticky;
+      top: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: #15152b;
+      border-bottom: 1px solid #333;
+      font-weight: bold;
+    }
+
+    .search-modal-close {
+      border: 0;
+      background: transparent;
+      color: #fff;
+      font-size: 1.3rem;
+      cursor: pointer;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+
+    .btn {
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .btn-a { background: var(--neon-cyan); color: #000; }
+    .btn-b { background: var(--neon-pink); color: #fff; }
+    .btn-master { background: var(--neon-green); color: #000; box-shadow: 0 0 10px var(--neon-green); }
+    .btn-lights { background: var(--neon-purple); color: #fff; box-shadow: 0 0 10px var(--neon-purple); }
+
+    .btn:hover { opacity: 0.85; transform: scale(1.03); }
+
+    .vol-control {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* Crossfader Section */
+    .crossfader-panel {
+      width: 100%;
+      max-width: 1100px;
+      background: var(--panel-bg);
+      border: 2px solid #333;
+      border-radius: 15px;
+      padding: 20px;
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .crossfader-container {
+      display: flex;
+      align-items: center;
+      width: 100%;
+      gap: 15px;
+    }
+
+    .auto-crossfader-btn {
+      min-width: 74px;
+      padding: 8px 10px;
+      border: 1px solid var(--neon-green);
+      border-radius: 5px;
+      background: transparent;
+      color: var(--neon-green);
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .auto-crossfader-btn.active {
+      background: var(--neon-green);
+      color: #000;
+      box-shadow: 0 0 12px var(--neon-green);
+    }
+
+    .speed-select {
+      padding: 8px;
+      border: 1px solid var(--neon-purple);
+      border-radius: 5px;
+      background: #121225;
+      color: #fff;
+      font-weight: bold;
+    }
+
+    input[type=range] {
+      -webkit-appearance: none;
+      width: 100%;
+      background: transparent;
+    }
+
+    input[type=range]:focus { outline: none; }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      width: 100%;
+      height: 12px;
+      cursor: pointer;
+      background: linear-gradient(90deg, var(--neon-cyan) 0%, var(--neon-purple) 50%, var(--neon-pink) 100%);
+      border-radius: 6px;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      height: 26px;
+      width: 16px;
+      border-radius: 4px;
+      background: #fff;
+      cursor: pointer;
+      -webkit-appearance: none;
+      margin-top: -7px;
+      box-shadow: 0 0 10px #fff;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>VYCCHY DJ Mixer</h1>
+
+  <div class="master-bar">
+    <div class="master-group">
+      <span style="font-weight:bold; color: var(--neon-green);">GLOBAL:</span>
+      <button class="btn btn-master" onclick="playBoth()">► Play Ambos</button>
+      <button class="btn btn-master" onclick="pauseBoth()">❚❚ Pause Ambos</button>
+    </div>
+
+    <div class="master-group">
+      <span style="font-weight:bold; color: var(--neon-purple);">LUCES BOLICHE:</span>
+      <button class="btn btn-lights" onclick="setLights('off')">Off</button>
+      <button class="btn btn-lights" onclick="setLights('smooth')">Suave</button>
+      <button class="btn btn-lights" onclick="setLights('fast')">Fiesta 🔥</button>
+    </div>
+  </div>
+
+  <div class="mixer-container">
+    <div class="deck deck-a">
+      <div class="search-row">
+        <input type="search" id="search-a" class="url-input" placeholder="Buscar artista o canción">
+        <button class="btn btn-a search-btn" onclick="searchYouTubeMusic('a')" title="Buscar dentro de este deck">Buscar</button>
+      </div>
+      <div id="results-a" class="search-results" aria-live="polite"></div>
+      <input type="text" id="url-a" class="url-input" placeholder="URL o ID de YouTube A" value="L_LUpnjgPso">
+      <button class="btn btn-a" style="width: 100%; margin-bottom: 10px;" onclick="loadVideo('a')">Cargar Deck A</button>
+      <div class="video-wrapper">
+        <div id="player-a"></div>
+      </div>
+      <div class="controls">
+        <button class="btn btn-a" style="flex:1;" onclick="playVideo('a')">Play</button>
+        <button class="btn btn-a" style="flex:1;" onclick="pauseVideo('a')">Pause</button>
+      </div>
+      <div class="vol-control">
+        <span>Vol A:</span>
+        <input type="range" id="vol-a" min="0" max="100" value="100" oninput="setIndividualVolume('a', this.value)">
+        <span id="vol-display-a" style="width: 40px;">100%</span>
+      </div>
+    </div>
+
+    <div class="deck deck-b">
+      <div class="search-row">
+        <input type="search" id="search-b" class="url-input" placeholder="Buscar artista o canción">
+        <button class="btn btn-b search-btn" onclick="searchYouTubeMusic('b')" title="Buscar dentro de este deck">Buscar</button>
+      </div>
+      <div id="results-b" class="search-results" aria-live="polite"></div>
+      <input type="text" id="url-b" class="url-input" placeholder="URL o ID de YouTube B" value="L_LUpnjgPso">
+      <button class="btn btn-b" style="width: 100%; margin-bottom: 10px;" onclick="loadVideo('b')">Cargar Deck B</button>
+      <div class="video-wrapper">
+        <div id="player-b"></div>
+      </div>
+      <div class="controls">
+        <button class="btn btn-b" style="flex:1;" onclick="playVideo('b')">Play</button>
+        <button class="btn btn-b" style="flex:1;" onclick="pauseVideo('b')">Pause</button>
+      </div>
+      <div class="vol-control">
+        <span>Vol B:</span>
+        <input type="range" id="vol-b" min="0" max="100" value="100" oninput="setIndividualVolume('b', this.value)">
+        <span id="vol-display-b" style="width: 40px;">100%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="crossfader-panel">
+    <div style="margin-bottom: 10px; font-weight: bold; letter-spacing: 2px;">CROSSFADER (MEZCLA DE AUDIO)</div>
+    <div class="crossfader-container">
+      <span style="color: var(--neon-cyan); font-weight: bold;">DECK A</span>
+      <input type="range" id="crossfader" min="0" max="100" value="50" oninput="stopAutoCrossfader(); applyVolumes()">
+      <button id="auto-crossfader" class="auto-crossfader-btn" onclick="toggleAutoCrossfader()" aria-pressed="false">AUTO</button>
+      <select id="crossfader-speed" class="speed-select" aria-label="Velocidad automática">
+        <option value="slow">Lenta</option>
+        <option value="normal" selected>Normal</option>
+        <option value="fast">Rápida</option>
+      </select>
+      <span style="color: var(--neon-pink); font-weight: bold;">DECK B</span>
+    </div>
+  </div>
+
+  <script>
+    let playerA, playerB;
+    let masterVolA = 100;
+    let masterVolB = 100;
+    let autoCrossfaderTimer = null;
+    let autoCrossfaderActive = false;
+    let autoCrossfaderDirection = 1;
+    const crossfaderSpeeds = {
+      slow: { interval: 100, step: 1 },
+      normal: { interval: 60, step: 2 },
+      fast: { interval: 30, step: 4 }
+    };
+
+    // API YouTube
+    const tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.getElementsByTagName('script')[0].parentNode.insertBefore(tag, document.getElementsByTagName('script')[0]);
+
+    function onYouTubeIframeAPIReady() {
+      const playerVars = { controls: 1, origin: window.location.origin };
+      playerA = new YT.Player('player-a', { videoId: 'L_LUpnjgPso', playerVars });
+      playerB = new YT.Player('player-b', { videoId: 'L_LUpnjgPso', playerVars });
+    }
+
+    function extractVideoId(input) {
+      const normalizedInput = input.replace('yout-ube.com', 'youtube.com');
+      const match = normalizedInput.match(/^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/);
+      return (match && match[2].length === 11) ? match[2] : normalizedInput;
+    }
+
+    function searchYouTubeMusic(deck) {
+      const query = document.getElementById(`search-${deck}`).value.trim();
+      const results = document.getElementById(`results-${deck}`);
+      if (!query) return;
+      results.classList.add('visible');
+      results.innerHTML = `<div class="search-modal-header"><span>Resultados: ${escapeHtml(query)}</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div><div style="padding: 10px;">Buscando...</div>`;
+
+      fetch(`/api/search?q=${encodeURIComponent(query)}`)
+        .then(response => response.ok ? response.json() : Promise.reject(new Error('No se pudo buscar')))
+        .then(data => renderSearchResults(deck, data))
+        .catch(() => {
+          results.innerHTML = '<div style="padding: 10px;">No se pudieron cargar resultados. Comprueba tu conexión.</div>';
+        });
+    }
+
+    function renderSearchResults(deck, data) {
+      const results = document.getElementById(`results-${deck}`);
+      const items = data.contents?.twoColumnSearchResultsRenderer?.primaryContents
+        ?.sectionListRenderer?.contents?.flatMap(section => section.itemSectionRenderer?.contents || []) || [];
+      const videos = items.map(item => item.videoRenderer).filter(Boolean).slice(0, 8);
+      if (!videos.length) {
+        results.innerHTML = `<div class="search-modal-header"><span>Resultados</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div><div style="padding: 10px;">No se encontraron videos.</div>`;
+        return;
+      }
+
+      results.innerHTML = `<div class="search-modal-header"><span>Selecciona un video para Deck ${deck.toUpperCase()}</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div>` + videos.map(video => {
+        const title = video.title?.runs?.[0]?.text || 'Video sin título';
+        const videoId = video.videoId;
+        const thumbnail = video.thumbnail?.thumbnails?.[0]?.url || '';
+        return `<button class="search-result" onclick="selectSearchResult('${videoId}', '${deck}')">
+          <img src="${thumbnail}" alt="">
+          <span>${escapeHtml(title)}</span>
+        </button>`;
+      }).join('');
+    }
+
+    function selectSearchResult(videoId, deck) {
+      const videoUrl = `https://www.yout-ube.com/watch?v=${videoId}`;
+      document.getElementById(`url-${deck}`).value = videoUrl;
+      document.getElementById(`results-${deck}`).classList.remove('visible');
+      loadVideo(deck, videoId);
+    }
+
+    function closeSearchResults(deck) {
+      document.getElementById(`results-${deck}`).classList.remove('visible');
+    }
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>'"]/g, character => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+      }[character]));
+    }
+
+    function loadVideo(deck, selectedVideoId = '') {
+      const videoId = selectedVideoId || extractVideoId(document.getElementById(`url-${deck}`).value);
+      const player = deck === 'a' ? playerA : playerB;
+      if (!videoId || !window.YT || !YT.Player) return;
+      if (player && player.destroy) player.destroy();
+
+      const newPlayer = new YT.Player(`player-${deck}`, {
+        videoId,
+        playerVars: { controls: 1, origin: window.location.origin },
+        events: { onError: () => showUnavailableVideo(deck) }
+      });
+      if (deck === 'a') playerA = newPlayer;
+      else playerB = newPlayer;
+    }
+
+    function showUnavailableVideo(deck) {
+      const results = document.getElementById(`results-${deck}`);
+      results.classList.add('visible');
+      results.insertAdjacentHTML('afterbegin', '<div style="padding: 10px; color: #ff8abf;">Este video no permite reproducción aquí. Selecciona otro resultado.</div>');
+    }
+
+    function playVideo(deck) {
+      const player = deck === 'a' ? playerA : playerB;
+      if (player && player.playVideo) player.playVideo();
+    }
+
+    function pauseVideo(deck) {
+      const player = deck === 'a' ? playerA : playerB;
+      if (player && player.pauseVideo) player.pauseVideo();
+    }
+
+    // Controles simultáneos
+    function playBoth() {
+      if (playerA && playerA.playVideo) playerA.playVideo();
+      if (playerB && playerB.playVideo) playerB.playVideo();
+    }
+
+    function pauseBoth() {
+      if (playerA && playerA.pauseVideo) playerA.pauseVideo();
+      if (playerB && playerB.pauseVideo) playerB.pauseVideo();
+    }
+
+    // Control de luces disco
+    function setLights(mode) {
+      document.body.classList.remove('lights-active', 'lights-fast');
+      if (mode === 'smooth') document.body.classList.add('lights-active');
+      if (mode === 'fast') document.body.classList.add('lights-fast');
+    }
+
+    function setIndividualVolume(deck, value) {
+      if (deck === 'a') {
+        masterVolA = value;
+        document.getElementById('vol-display-a').innerText = `${value}%`;
+      } else {
+        masterVolB = value;
+        document.getElementById('vol-display-b').innerText = `${value}%`;
+      }
+      applyVolumes();
+    }
+
+    function applyVolumes() {
+      const xfaderVal = document.getElementById('crossfader').value / 100;
+      const finalVolA = Math.round(masterVolA * (1 - xfaderVal));
+      const finalVolB = Math.round(masterVolB * xfaderVal);
+
+      if (playerA && playerA.setVolume) playerA.setVolume(finalVolA);
+      if (playerB && playerB.setVolume) playerB.setVolume(finalVolB);
+    }
+
+    function toggleAutoCrossfader() {
+      if (autoCrossfaderActive) stopAutoCrossfader();
+      else startAutoCrossfader();
+    }
+
+    function startAutoCrossfader() {
+      const button = document.getElementById('auto-crossfader');
+      const crossfader = document.getElementById('crossfader');
+      const speed = crossfaderSpeeds[document.getElementById('crossfader-speed').value];
+      if (autoCrossfaderActive) return;
+      if (Number(crossfader.value) >= 100) autoCrossfaderDirection = -1;
+      else if (Number(crossfader.value) <= 0) autoCrossfaderDirection = 1;
+      autoCrossfaderActive = true;
+      button.classList.add('active');
+      button.setAttribute('aria-pressed', 'true');
+      button.textContent = 'DETENER';
+      autoCrossfaderTimer = setInterval(() => {
+        let value = Number(crossfader.value) + autoCrossfaderDirection * speed.step;
+        if (value >= 100 || value <= 0) {
+          value = Math.max(0, Math.min(100, value));
+        }
+        crossfader.value = value;
+        applyVolumes();
+        if (value === 0 || value === 100) stopAutoCrossfader();
+      }, speed.interval);
+    }
+
+    function stopAutoCrossfader() {
+      if (autoCrossfaderTimer) clearInterval(autoCrossfaderTimer);
+      autoCrossfaderTimer = null;
+      autoCrossfaderActive = false;
+      const button = document.getElementById('auto-crossfader');
+      if (button) {
+        button.classList.remove('active');
+        button.setAttribute('aria-pressed', 'false');
+        button.textContent = 'AUTO';
+      }
+    }
+  </script>
+</body>
+</html>
