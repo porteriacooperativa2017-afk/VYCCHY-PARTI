@@ -110,6 +110,59 @@
     .deck-a { border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 243, 255, 0.2); }
     .deck-b { border-color: var(--neon-pink); box-shadow: 0 0 15px rgba(255, 0, 127, 0.2); }
 
+    .deck-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 180px;
+      gap: 15px;
+    }
+
+    .deck-history {
+      min-width: 0;
+      padding-left: 12px;
+      border-left: 1px solid #333;
+    }
+
+    .deck-history h3 {
+      margin-bottom: 10px;
+      color: var(--neon-green);
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      max-height: 390px;
+      overflow-y: auto;
+    }
+
+    .history-empty {
+      color: #aaa;
+      font-size: 0.78rem;
+    }
+
+    .history-item {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #333;
+      border-radius: 5px;
+      background: #0d0d1c;
+      color: #fff;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .history-item:hover { border-color: var(--neon-green); }
+    .history-item img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; margin-bottom: 5px; }
+    .history-item span { display: block; font-size: 0.76rem; line-height: 1.25; }
+
+    @media (max-width: 720px) {
+      .deck-layout { grid-template-columns: 1fr; }
+      .deck-history { padding: 12px 0 0; border-left: 0; border-top: 1px solid #333; }
+      .history-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 260px; }
+    }
+
     .video-wrapper {
       position: relative;
       width: 100%;
@@ -335,6 +388,8 @@
 
   <div class="mixer-container">
     <div class="deck deck-a">
+      <div class="deck-layout">
+        <div>
       <div class="search-row">
         <input type="search" id="search-a" class="url-input" placeholder="Buscar artista o canción">
         <button class="btn btn-a search-btn" onclick="searchYouTubeMusic('a')" title="Buscar dentro de este deck">Buscar</button>
@@ -354,9 +409,17 @@
         <input type="range" id="vol-a" min="0" max="100" value="100" oninput="setIndividualVolume('a', this.value)">
         <span id="vol-display-a" style="width: 40px;">100%</span>
       </div>
+        </div>
+        <aside class="deck-history" aria-label="Historial del Deck A">
+          <h3>HISTORIAL A</h3>
+          <div id="history-a" class="history-list"><span class="history-empty">Aún no hay reproducciones</span></div>
+        </aside>
+      </div>
     </div>
 
     <div class="deck deck-b">
+      <div class="deck-layout">
+        <div>
       <div class="search-row">
         <input type="search" id="search-b" class="url-input" placeholder="Buscar artista o canción">
         <button class="btn btn-b search-btn" onclick="searchYouTubeMusic('b')" title="Buscar dentro de este deck">Buscar</button>
@@ -375,6 +438,12 @@
         <span>Vol B:</span>
         <input type="range" id="vol-b" min="0" max="100" value="100" oninput="setIndividualVolume('b', this.value)">
         <span id="vol-display-b" style="width: 40px;">100%</span>
+      </div>
+        </div>
+        <aside class="deck-history" aria-label="Historial del Deck B">
+          <h3>HISTORIAL B</h3>
+          <div id="history-b" class="history-list"><span class="history-empty">Aún no hay reproducciones</span></div>
+        </aside>
       </div>
     </div>
   </div>
@@ -401,6 +470,9 @@
     let autoCrossfaderTimer = null;
     let autoCrossfaderActive = false;
     let autoCrossfaderDirection = 1;
+    const playbackHistory = { a: [], b: [] };
+    let historyReady = false;
+    const cacheDatabase = openCacheDatabase();
     const crossfaderSpeeds = {
       slow: { interval: 100, step: 1 },
       normal: { interval: 60, step: 2 },
@@ -412,10 +484,58 @@
     tag.src = "https://www.youtube.com/iframe_api";
     document.getElementsByTagName('script')[0].parentNode.insertBefore(tag, document.getElementsByTagName('script')[0]);
 
-    function onYouTubeIframeAPIReady() {
+    async function onYouTubeIframeAPIReady() {
+      await restoreHistory();
       const playerVars = { controls: 1, origin: window.location.origin };
       playerA = new YT.Player('player-a', { videoId: 'L_LUpnjgPso', playerVars });
       playerB = new YT.Player('player-b', { videoId: 'L_LUpnjgPso', playerVars });
+      historyReady = true;
+      if (!playbackHistory.a.length) addToHistory('a', 'L_LUpnjgPso', 'Fireplace Ambience');
+      if (!playbackHistory.b.length) addToHistory('b', 'L_LUpnjgPso', 'Fireplace Ambience');
+    }
+
+    function openCacheDatabase() {
+      return new Promise((resolve, reject) => {
+        const request = indexedDB.open('vycchy-dj-cache', 1);
+        request.onupgradeneeded = () => {
+          const database = request.result;
+          database.createObjectStore('history', { keyPath: 'key' });
+          database.createObjectStore('searches', { keyPath: 'query' });
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+      });
+    }
+
+    async function readCache(storeName, key) {
+      try {
+        const database = await cacheDatabase;
+        return await new Promise((resolve, reject) => {
+          const request = database.transaction(storeName, 'readonly').objectStore(storeName).get(key);
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      } catch (error) {
+        return null;
+      }
+    }
+
+    async function writeCache(storeName, value) {
+      try {
+        const database = await cacheDatabase;
+        database.transaction(storeName, 'readwrite').objectStore(storeName).put(value);
+      } catch (error) {
+        // El almacenamiento es opcional; no debe bloquear la reproducción.
+      }
+    }
+
+    async function restoreHistory() {
+      const saved = await Promise.all([readCache('history', 'a'), readCache('history', 'b')]);
+      saved.forEach((deckHistory, index) => {
+        if (deckHistory?.items) playbackHistory[index === 0 ? 'a' : 'b'].push(...deckHistory.items);
+      });
+      renderHistory('a');
+      renderHistory('b');
     }
 
     function extractVideoId(input) {
@@ -424,7 +544,7 @@
       return (match && match[2].length === 11) ? match[2] : normalizedInput;
     }
 
-    function searchYouTubeMusic(deck) {
+    async function searchYouTubeMusic(deck) {
       const query = document.getElementById(`search-${deck}`).value.trim();
       const results = document.getElementById(`results-${deck}`);
       if (!query) return;
@@ -433,10 +553,19 @@
 
       fetch(`/api/search?q=${encodeURIComponent(query)}`)
         .then(response => response.ok ? response.json() : Promise.reject(new Error('No se pudo buscar')))
-        .then(data => renderSearchResults(deck, data))
+        .then(data => {
+          writeCache('searches', { query, data, savedAt: Date.now() });
+          renderSearchResults(deck, data);
+        })
         .catch(() => {
-          results.innerHTML = '<div style="padding: 10px;">No se pudieron cargar resultados. Comprueba tu conexión.</div>';
+          readCache('searches', query).then(cached => {
+            if (cached?.data) renderSearchResults(deck, cached.data);
+            else results.innerHTML = '<div style="padding: 10px;">No se pudieron cargar resultados. Comprueba tu conexión.</div>';
+          });
         });
+
+      const cachedSearch = await readCache('searches', query);
+      if (cachedSearch?.data) renderSearchResults(deck, cachedSearch.data);
     }
 
     function renderSearchResults(deck, data) {
@@ -453,18 +582,18 @@
         const title = video.title?.runs?.[0]?.text || 'Video sin título';
         const videoId = video.videoId;
         const thumbnail = video.thumbnail?.thumbnails?.[0]?.url || '';
-        return `<button class="search-result" onclick="selectSearchResult('${videoId}', '${deck}')">
+        return `<button class="search-result" onclick="selectSearchResult('${videoId}', '${deck}', this.querySelector('span').textContent)">
           <img src="${thumbnail}" alt="">
           <span>${escapeHtml(title)}</span>
         </button>`;
       }).join('');
     }
 
-    function selectSearchResult(videoId, deck) {
+    function selectSearchResult(videoId, deck, title = 'Video seleccionado') {
       const videoUrl = `https://www.yout-ube.com/watch?v=${videoId}`;
       document.getElementById(`url-${deck}`).value = videoUrl;
       document.getElementById(`results-${deck}`).classList.remove('visible');
-      loadVideo(deck, videoId);
+      loadVideo(deck, videoId, title);
     }
 
     function closeSearchResults(deck) {
@@ -477,10 +606,11 @@
       }[character]));
     }
 
-    function loadVideo(deck, selectedVideoId = '') {
+    function loadVideo(deck, selectedVideoId = '', title = '') {
       const videoId = selectedVideoId || extractVideoId(document.getElementById(`url-${deck}`).value);
       const player = deck === 'a' ? playerA : playerB;
       if (!videoId || !window.YT || !YT.Player) return;
+      addToHistory(deck, videoId, title || document.getElementById(`url-${deck}`).value);
       if (player && player.destroy) player.destroy();
 
       const newPlayer = new YT.Player(`player-${deck}`, {
@@ -490,6 +620,34 @@
       });
       if (deck === 'a') playerA = newPlayer;
       else playerB = newPlayer;
+    }
+
+    function addToHistory(deck, videoId, title) {
+      const history = playbackHistory[deck];
+      if (history[0]?.videoId === videoId) return;
+      history.unshift({ videoId, title: escapeHtml(title) });
+      if (history.length > 12) history.pop();
+      renderHistory(deck);
+      if (historyReady) writeCache('history', { key: deck, items: history });
+    }
+
+    function renderHistory(deck) {
+      const historyElement = document.getElementById(`history-${deck}`);
+      const history = playbackHistory[deck];
+      if (!history.length) {
+        historyElement.innerHTML = '<span class="history-empty">Aún no hay reproducciones</span>';
+        return;
+      }
+      historyElement.innerHTML = history.map(item => `<button class="history-item" onclick="loadHistoryItem('${item.videoId}', '${deck}')">
+        <img src="https://i.ytimg.com/vi/${item.videoId}/mqdefault.jpg" alt="">
+        <span>${item.title}</span>
+      </button>`).join('');
+    }
+
+    function loadHistoryItem(videoId, deck) {
+      const item = playbackHistory[deck].find(historyItem => historyItem.videoId === videoId);
+      document.getElementById(`url-${deck}`).value = `https://www.yout-ube.com/watch?v=${videoId}`;
+      loadVideo(deck, videoId, item?.title || 'Video del historial');
     }
 
     function showUnavailableVideo(deck) {
