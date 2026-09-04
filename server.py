@@ -1,10 +1,20 @@
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import parse_qs, quote, urlparse
+from urllib.parse import parse_qs, urlparse
 from urllib.request import Request, urlopen
 import json
 
 
 class AppHandler(SimpleHTTPRequestHandler):
+    def end_headers(self):
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        self.send_header('Access-Control-Allow-Headers', 'Content-Type')
+        super().end_headers()
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self.end_headers()
+
     def do_GET(self):
         parsed_url = urlparse(self.path)
         if parsed_url.path == '/api/search':
@@ -46,4 +56,8 @@ class AppHandler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
 
-ThreadingHTTPServer(('127.0.0.1', 5500), AppHandler).serve_forever()
+if __name__ == '__main__':
+    import os
+
+    port = int(os.environ.get('PORT', '5500'))
+    ThreadingHTTPServer(('0.0.0.0', port), AppHandler).serve_forever()
