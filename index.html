@@ -400,7 +400,7 @@
       <div class="deck-layout">
         <div>
       <div class="search-row">
-        <input type="search" id="search-a" class="url-input" placeholder="Buscar artista o canción">
+        <input type="search" id="search-a" class="url-input" placeholder="Pegar enlace o ID del video">
         <button class="btn btn-a search-btn" onclick="searchYouTubeMusic('a')" title="Buscar dentro de este deck">Buscar</button>
       </div>
       <div id="results-a" class="search-results" aria-live="polite"></div>
@@ -430,7 +430,7 @@
       <div class="deck-layout">
         <div>
       <div class="search-row">
-        <input type="search" id="search-b" class="url-input" placeholder="Buscar artista o canción">
+        <input type="search" id="search-b" class="url-input" placeholder="Pegar enlace o ID del video">
         <button class="btn btn-b search-btn" onclick="searchYouTubeMusic('b')" title="Buscar dentro de este deck">Buscar</button>
       </div>
       <div id="results-b" class="search-results" aria-live="polite"></div>
@@ -559,32 +559,18 @@
       const query = document.getElementById(`search-${deck}`).value.trim();
       const results = document.getElementById(`results-${deck}`);
       if (!query) return;
-      results.classList.add('visible');
-      results.innerHTML = `<div class="search-modal-header"><span>Resultados: ${escapeHtml(query)}</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div><div style="padding: 10px;">Buscando en YouTube...</div>`;
 
-      try {
-        const response = await fetch(`https://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=${encodeURIComponent(query)}`);
-        const text = await response.text();
-        // Limpiamos la respuesta JSONP que devuelve Google para extraer las sugerencias
-        const json = JSON.parse(text.substring(text.indexOf('(') + 1, text.lastIndexOf(')')));
-        const suggestions = json[1] || [];
-
-        if (!suggestions.length) {
-          results.innerHTML = `<div class="search-modal-header"><span>Resultados</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div><div style="padding: 10px;">No se encontraron resultados. Puedes pegar el enlace de YouTube directamente en el campo de texto.</div>`;
-          return;
-        }
-
-        results.innerHTML = `<div class="search-modal-header"><span>Sugerencias para Deck ${deck.toUpperCase()}</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div>` + 
-          suggestions.map(item => {
-            const termino = item[0];
-            return `<button class="search-result" style="padding: 12px;" onclick="document.getElementById('url-${deck}').value='https://www.youtube.com/results?search_query=${encodeURIComponent(termino)}'; closeSearchResults('${deck}'); alert('Término seleccionado. Haz clic en Cargar Deck.');">
-              <span>🔍 Buscar "${escapeHtml(termino)}"</span>
-            </button>`;
-          }).join('');
-
-      } catch (error) {
-        results.innerHTML = `<div class="search-modal-header"><span>Aviso</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div><div style="padding: 10px;">Copia y pega el link de YouTube directamente en la caja de reproducción para evitar bloqueos del navegador.</div>`;
+      const videoId = extractVideoId(query);
+      if (videoId && /^[A-Za-z0-9_-]{11}$/.test(videoId)) {
+        const videoUrl = `https://www.yout-ube.com/watch?v=${videoId}`;
+        document.getElementById(`url-${deck}`).value = videoUrl;
+        results.classList.remove('visible');
+        loadVideo(deck, videoId, 'Video seleccionado');
+        return;
       }
+
+      results.classList.add('visible');
+      results.innerHTML = `<div class="search-modal-header"><span>Enlace no válido</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div><div style="padding: 10px;">Pega un enlace de YouTube o un ID de 11 caracteres.</div>`;
     }
 
     function renderSearchResults(deck, data) {
