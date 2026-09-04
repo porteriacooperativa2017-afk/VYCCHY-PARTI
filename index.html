@@ -614,8 +614,14 @@
     function loadVideo(deck, selectedVideoId = '', title = '') {
       const videoId = selectedVideoId || extractVideoId(document.getElementById(`url-${deck}`).value);
       const player = deck === 'a' ? playerA : playerB;
-      if (!videoId || !window.YT || !YT.Player) return;
+      if (!videoId || !/^[A-Za-z0-9_-]{11}$/.test(videoId)) return;
       addToHistory(deck, videoId, title || document.getElementById(`url-${deck}`).value);
+
+      if (!window.YT || !YT.Player) {
+        loadVideoFallback(deck, videoId);
+        return;
+      }
+
       if (player && player.destroy) player.destroy();
 
       const newPlayer = new YT.Player(`player-${deck}`, {
@@ -625,6 +631,11 @@
       });
       if (deck === 'a') playerA = newPlayer;
       else playerB = newPlayer;
+    }
+
+    function loadVideoFallback(deck, videoId) {
+      const playerContainer = document.getElementById(`player-${deck}`);
+      playerContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?controls=1&playsinline=1" title="Reproductor de video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
     }
 
     function addToHistory(deck, videoId, title) {
