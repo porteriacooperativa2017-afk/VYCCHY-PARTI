@@ -118,9 +118,74 @@
     .deck-a { border-color: var(--neon-cyan); box-shadow: 0 0 15px rgba(0, 243, 255, 0.2); }
     .deck-b { border-color: var(--neon-pink); box-shadow: 0 0 15px rgba(255, 0, 127, 0.2); }
 
+    .playlist-panel {
+      width: 100%;
+      max-width: 1100px;
+      margin: 0 0 20px;
+      padding: 15px;
+      border: 1px solid var(--neon-green);
+      border-radius: 12px;
+      background: var(--panel-bg);
+    }
+
+    .playlist-panel h2 {
+      margin-bottom: 10px;
+      color: var(--neon-green);
+      font-size: 1rem;
+      letter-spacing: 1px;
+    }
+
+    .deck-layout { grid-template-columns: minmax(0, 1fr) 190px; }
+
+    .deck-playlist {
+      min-width: 0;
+      padding-left: 12px;
+      border-left: 1px solid #333;
+    }
+
+    .deck-playlist summary {
+      color: var(--neon-green);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-weight: bold;
+      letter-spacing: 1px;
+    }
+
+    .deck-playlist .playlist-list {
+      display: flex;
+      flex-direction: column;
+      max-height: 390px;
+      margin-top: 10px;
+    }
+
+    .deck-playlist .playlist-item { display: block; }
+    .deck-playlist .playlist-button { width: 100%; margin-top: 5px; }
+
+    .playlist-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 8px;
+      max-height: 260px;
+      overflow-y: auto;
+    }
+
+    .playlist-item {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 8px;
+      align-items: center;
+      padding: 8px;
+      border: 1px solid #333;
+      border-radius: 5px;
+      background: #0d0d1c;
+    }
+
+    .playlist-title { overflow-wrap: anywhere; font-size: 0.85rem; }
+    .playlist-button { padding: 6px 8px; font-size: 0.72rem; }
+
     .deck-layout {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 180px;
+      grid-template-columns: 1fr;
       gap: 15px;
     }
 
@@ -166,8 +231,8 @@
     .history-item span { display: block; font-size: 0.76rem; line-height: 1.25; }
 
     @media (max-width: 720px) {
+      .deck-playlist { padding: 12px 0 0; border-left: 0; border-top: 1px solid #333; }
       .deck-layout { grid-template-columns: 1fr; }
-      .deck-history { padding: 12px 0 0; border-left: 0; border-top: 1px solid #333; }
       .history-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 260px; }
     }
 
@@ -395,12 +460,22 @@
     </div>
   </div>
 
+  <section class="playlist-panel" aria-label="Lista de videos">
+    <h2>BUSCAR Y GUARDAR VIDEO</h2>
+    <div class="search-row">
+      <input type="search" id="search-playlist" class="url-input" placeholder="Buscar artista, canción o enlace" onkeydown="if (event.key === 'Enter') searchYouTubeMusic('playlist')">
+      <button class="btn btn-master search-btn" onclick="searchYouTubeMusic('playlist')">Buscar</button>
+    </div>
+    <div id="sheet-status" class="history-empty" aria-live="polite"></div>
+    <div id="results-playlist" class="search-results" aria-live="polite"></div>
+  </section>
+
   <div class="mixer-container">
     <div class="deck deck-a">
       <div class="deck-layout">
         <div>
       <div class="search-row">
-        <input type="search" id="search-a" class="url-input" placeholder="Pegar enlace o ID del video">
+        <input type="search" id="search-a" class="url-input" placeholder="Buscar videos o pegar enlace" onkeydown="if (event.key === 'Enter') searchYouTubeMusic('a')">
         <button class="btn btn-a search-btn" onclick="searchYouTubeMusic('a')" title="Buscar dentro de este deck">Buscar</button>
       </div>
       <div id="results-a" class="search-results" aria-live="polite"></div>
@@ -419,10 +494,10 @@
         <span id="vol-display-a" style="width: 40px;">100%</span>
       </div>
         </div>
-        <aside class="deck-history" aria-label="Historial del Deck A">
-          <h3>HISTORIAL A</h3>
-          <div id="history-a" class="history-list"><span class="history-empty">Aún no hay reproducciones</span></div>
-        </aside>
+        <details class="deck-playlist" open>
+          <summary>LISTA DECK 1</summary>
+          <div id="playlist-a" class="playlist-list"><span class="history-empty">Sin videos</span></div>
+        </details>
       </div>
     </div>
 
@@ -430,7 +505,7 @@
       <div class="deck-layout">
         <div>
       <div class="search-row">
-        <input type="search" id="search-b" class="url-input" placeholder="Pegar enlace o ID del video">
+        <input type="search" id="search-b" class="url-input" placeholder="Buscar videos o pegar enlace" onkeydown="if (event.key === 'Enter') searchYouTubeMusic('b')">
         <button class="btn btn-b search-btn" onclick="searchYouTubeMusic('b')" title="Buscar dentro de este deck">Buscar</button>
       </div>
       <div id="results-b" class="search-results" aria-live="polite"></div>
@@ -449,10 +524,10 @@
         <span id="vol-display-b" style="width: 40px;">100%</span>
       </div>
         </div>
-        <aside class="deck-history" aria-label="Historial del Deck B">
-          <h3>HISTORIAL B</h3>
-          <div id="history-b" class="history-list"><span class="history-empty">Aún no hay reproducciones</span></div>
-        </aside>
+        <details class="deck-playlist" open>
+          <summary>LISTA DECK 2</summary>
+          <div id="playlist-b" class="playlist-list"><span class="history-empty">Sin videos</span></div>
+        </details>
       </div>
     </div>
   </div>
@@ -479,11 +554,13 @@
     let autoCrossfaderTimer = null;
     let autoCrossfaderActive = false;
     let autoCrossfaderDirection = 1;
-    const playbackHistory = { a: [], b: [] };
+    const playlistHistory = [];
+    let pendingVideo = null;
     let historyReady = false;
     const cacheDatabase = openCacheDatabase();
     const configuredApiUrl = new URLSearchParams(window.location.search).get('api');
     const searchApiUrl = configuredApiUrl || localStorage.getItem('vycchy-search-api') || '/api/search';
+    const sheetApiUrl = new URLSearchParams(window.location.search).get('sheetApi') || localStorage.getItem('vycchy-sheet-api') || 'https://script.google.com/macros/s/AKfycbyrtzfN1c7h2nA7PxgOcrTIkdUmLTiwbtmnacfrS9KWjr4NLsmhTxKpkfrBFV-94eEr/exec';
     const crossfaderSpeeds = {
       slow: { interval: 100, step: 1 },
       normal: { interval: 60, step: 2 },
@@ -497,12 +574,12 @@
 
     async function onYouTubeIframeAPIReady() {
       await restoreHistory();
+      await restoreSheetHistory();
       const playerVars = { controls: 1, origin: window.location.origin };
       playerA = new YT.Player('player-a', { videoId: 'L_LUpnjgPso', playerVars });
       playerB = new YT.Player('player-b', { videoId: 'L_LUpnjgPso', playerVars });
       historyReady = true;
-      if (!playbackHistory.a.length) addToHistory('a', 'L_LUpnjgPso', 'Fireplace Ambience');
-      if (!playbackHistory.b.length) addToHistory('b', 'L_LUpnjgPso', 'Fireplace Ambience');
+      if (!playlistHistory.length) addToHistory('L_LUpnjgPso', 'Fireplace Ambience', false);
     }
 
     function openCacheDatabase() {
@@ -541,12 +618,53 @@
     }
 
     async function restoreHistory() {
-      const saved = await Promise.all([readCache('history', 'a'), readCache('history', 'b')]);
-      saved.forEach((deckHistory, index) => {
-        if (deckHistory?.items) playbackHistory[index === 0 ? 'a' : 'b'].push(...deckHistory.items);
+      const saved = await readCache('history', 'playlist');
+      if (saved?.items) playlistHistory.push(...saved.items);
+      renderPlaylist();
+    }
+
+    async function restoreSheetHistory() {
+      if (!sheetApiUrl) return;
+      try {
+        const response = await fetch(sheetApiUrl);
+        if (!response.ok) return;
+        const data = await response.json();
+        mergeSheetHistory(data.items || []);
+        renderPlaylist();
+      } catch (error) {
+        // La app continúa usando la caché local si la hoja no está disponible.
+      }
+    }
+
+    function mergeSheetHistory(items) {
+      items.slice().reverse().forEach(item => {
+        const videoId = extractVideoId(item.url || '');
+        if (!/^[A-Za-z0-9_-]{11}$/.test(videoId) || playlistHistory.some(existing => existing.videoId === videoId)) return;
+        playlistHistory.push({ videoId, title: escapeHtml(item.title || item.url) });
       });
-      renderHistory('a');
-      renderHistory('b');
+      playlistHistory.splice(12);
+    }
+
+    async function saveToSheet(videoId, title) {
+      const status = document.getElementById('sheet-status');
+      if (!sheetApiUrl) {
+        status.textContent = 'La hoja no está conectada: falta la URL de Apps Script.';
+        return false;
+      }
+      const url = `https://www.yout-ube.com/watch?v=${videoId}`;
+      try {
+        const response = await fetch(sheetApiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({ url, title })
+        });
+        if (!response.ok) throw new Error('Respuesta no válida');
+        status.textContent = 'Guardado en Google Sheets.';
+        return true;
+      } catch (error) {
+        status.textContent = 'No se pudo guardar en Google Sheets. Revisa la URL de Apps Script.';
+        return false;
+      }
     }
 
     function extractVideoId(input) {
@@ -562,19 +680,32 @@
 
       const videoId = extractVideoId(query);
       if (videoId && /^[A-Za-z0-9_-]{11}$/.test(videoId)) {
-        const videoUrl = `https://www.yout-ube.com/watch?v=${videoId}`;
-        document.getElementById(`url-${deck}`).value = videoUrl;
-        results.classList.remove('visible');
-        loadVideo(deck, videoId, 'Video seleccionado');
+        renderSearchResults(deck, { directVideo: { videoId } });
         return;
       }
 
       results.classList.add('visible');
-      results.innerHTML = `<div class="search-modal-header"><span>Enlace no válido</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div><div style="padding: 10px;">Pega un enlace de YouTube o un ID de 11 caracteres.</div>`;
+      results.innerHTML = `<div class="search-modal-header"><span>Buscando videos</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div><div style="padding: 10px;">Buscando...</div>`;
+      try {
+        const response = await fetch(`${searchApiUrl}?q=${encodeURIComponent(query)}`);
+        if (!response.ok) throw new Error('No se pudo buscar');
+        const data = await response.json();
+        writeCache('searches', { query, data, savedAt: Date.now() });
+        renderSearchResults(deck, data);
+      } catch (error) {
+        const cached = await readCache('searches', query);
+        if (cached?.data) renderSearchResults(deck, cached.data);
+        else results.innerHTML = `<div class="search-modal-header"><span>Sin resultados</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')">&times;</button></div><div style="padding: 10px;">No se pudo buscar. Puedes pegar un enlace directo.</div>`;
+      }
     }
 
     function renderSearchResults(deck, data) {
       const results = document.getElementById(`results-${deck}`);
+      if (data.directVideo) {
+        results.classList.add('visible');
+        results.innerHTML = `<div class="search-modal-header"><span>Video encontrado</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')">&times;</button></div><button class="search-result" onclick="selectSearchResult('${data.directVideo.videoId}', '${deck}', 'Video seleccionado')"><span>Guardar video ${data.directVideo.videoId}</span></button>`;
+        return;
+      }
       const items = data.contents?.twoColumnSearchResultsRenderer?.primaryContents
         ?.sectionListRenderer?.contents?.flatMap(section => section.itemSectionRenderer?.contents || []) || [];
       const videos = items.map(item => item.videoRenderer).filter(Boolean).slice(0, 8);
@@ -595,13 +726,37 @@
     }
 
     function selectSearchResult(videoId, deck, title = 'Video seleccionado') {
+      pendingVideo = { videoId, deck, title };
+      const results = document.getElementById(`results-${deck}`);
+      results.classList.add('visible');
+      results.innerHTML = `<div class="search-modal-header"><span>Guardar video</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')">&times;</button></div>
+        <div style="padding: 12px;">
+          <div style="margin-bottom: 8px;">${escapeHtml(title)}</div>
+          <input id="pending-title" class="url-input" type="text" placeholder="Nombre de la canción o tema" value="${escapeHtml(title)}">
+          <button class="btn btn-master" onclick="savePendingVideo()">Guardar en la lista</button>
+        </div>`;
+      document.getElementById('pending-title').focus();
+    }
+
+    function savePendingVideo() {
+      if (!pendingVideo) return;
+      const titleInput = document.getElementById('pending-title');
+      const title = titleInput.value.trim();
+      if (!title) {
+        titleInput.focus();
+        return;
+      }
+      const { videoId, deck } = pendingVideo;
       const videoUrl = `https://www.yout-ube.com/watch?v=${videoId}`;
-      document.getElementById(`url-${deck}`).value = videoUrl;
+      if (deck !== 'playlist') document.getElementById(`url-${deck}`).value = videoUrl;
+      addToHistory(videoId, title);
+      saveToSheet(videoId, title);
+      pendingVideo = null;
       document.getElementById(`results-${deck}`).classList.remove('visible');
-      loadVideo(deck, videoId, title);
     }
 
     function closeSearchResults(deck) {
+      pendingVideo = null;
       document.getElementById(`results-${deck}`).classList.remove('visible');
     }
 
@@ -615,7 +770,7 @@
       const videoId = selectedVideoId || extractVideoId(document.getElementById(`url-${deck}`).value);
       const player = deck === 'a' ? playerA : playerB;
       if (!videoId || !/^[A-Za-z0-9_-]{11}$/.test(videoId)) return;
-      addToHistory(deck, videoId, title || document.getElementById(`url-${deck}`).value);
+      addToHistory(videoId, title || document.getElementById(`url-${deck}`).value);
 
       if (!window.YT || !YT.Player) {
         loadVideoFallback(deck, videoId);
@@ -638,30 +793,31 @@
       playerContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?controls=1&playsinline=1" title="Reproductor de video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
     }
 
-    function addToHistory(deck, videoId, title) {
-      const history = playbackHistory[deck];
-      if (history[0]?.videoId === videoId) return;
-      history.unshift({ videoId, title: escapeHtml(title) });
-      if (history.length > 12) history.pop();
-      renderHistory(deck);
-      if (historyReady) writeCache('history', { key: deck, items: history });
+    function addToHistory(videoId, title, persist = true) {
+      if (playlistHistory.some(item => item.videoId === videoId)) return;
+      playlistHistory.unshift({ videoId, title: escapeHtml(title) });
+      playlistHistory.splice(12);
+      renderPlaylist();
+      if (historyReady) writeCache('history', { key: 'playlist', items: playlistHistory });
     }
 
-    function renderHistory(deck) {
-      const historyElement = document.getElementById(`history-${deck}`);
-      const history = playbackHistory[deck];
-      if (!history.length) {
-        historyElement.innerHTML = '<span class="history-empty">Aún no hay reproducciones</span>';
+    function renderPlaylist() {
+      if (!playlistHistory.length) {
+        ['a', 'b'].forEach(deck => {
+          document.getElementById(`playlist-${deck}`).innerHTML = '<span class="history-empty">Sin videos</span>';
+        });
         return;
       }
-      historyElement.innerHTML = history.map(item => `<button class="history-item" onclick="loadHistoryItem('${item.videoId}', '${deck}')">
-        <img src="https://i.ytimg.com/vi/${item.videoId}/mqdefault.jpg" alt="">
-        <span>${item.title}</span>
-      </button>`).join('');
+      ['a', 'b'].forEach(deck => {
+        document.getElementById(`playlist-${deck}`).innerHTML = playlistHistory.map(item => `<div class="playlist-item">
+          <span class="playlist-title">${item.title}</span>
+          <button class="btn ${deck === 'a' ? 'btn-a' : 'btn-b'} playlist-button" onclick="loadPlaylistItem('${item.videoId}', '${deck}')">Reproducir</button>
+        </div>`).join('');
+      });
     }
 
-    function loadHistoryItem(videoId, deck) {
-      const item = playbackHistory[deck].find(historyItem => historyItem.videoId === videoId);
+    function loadPlaylistItem(videoId, deck) {
+      const item = playlistHistory.find(historyItem => historyItem.videoId === videoId);
       document.getElementById(`url-${deck}`).value = `https://www.yout-ube.com/watch?v=${videoId}`;
       loadVideo(deck, videoId, item?.title || 'Video del historial');
     }
