@@ -558,23 +558,34 @@
       const results = document.getElementById(`results-${deck}`);
       if (!query) return;
       results.classList.add('visible');
-      results.innerHTML = `<div class="search-modal-header"><span>Resultados: ${escapeHtml(query)}</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div><div style="padding: 10px;">Buscando...</div>`;
+      results.innerHTML = `<div class="search-modal-header"><span>Resultados: ${escapeHtml(query)}</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div><div style="padding: 10px;">Buscando en YouTube...</div>`;
 
-      fetch(`/api/search?q=${encodeURIComponent(query)}`)
-        .then(response => response.ok ? response.json() : Promise.reject(new Error('No se pudo buscar')))
-        .then(data => {
-          writeCache('searches', { query, data, savedAt: Date.now() });
-          renderSearchResults(deck, data);
-        })
-        .catch(() => {
-          readCache('searches', query).then(cached => {
-            if (cached?.data) renderSearchResults(deck, cached.data);
-            else results.innerHTML = '<div style="padding: 10px;">No se pudieron cargar resultados. Comprueba tu conexión.</div>';
-          });
-        });
+      // Usamos un proxy CORS público de respaldo para consultar el feed público de sugerencias de YouTube de forma limpia
+      const searchUrl = `https://suggestqueries.google.com/complete/search?client=youtube&ds=yt&q=${encodeURIComponent(query)}`;
 
-      const cachedSearch = await readCache('searches', query);
-      if (cachedSearch?.data) renderSearchResults(deck, cachedSearch.data);
+      try {
+        const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(searchUrl)}`);
+        const json = await response.json();
+        const data = JSON.parse(json.contents);
+        const suggestions = data[1] || [];
+
+        if (!suggestions.length) {
+          results.innerHTML = `<div class="search-modal-header"><span>Resultados</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div><div style="padding: 10px;">No se encontraron sugerencias. Prueba pegando el enlace de YouTube directamente.</div>`;
+          return;
+        }
+
+        // Generamos accesos directos de búsqueda rápida basados en las sugerencias del buscador
+        results.innerHTML = `<div class="search-modal-header"><span>Sugerencias para Deck ${deck.toUpperCase()}</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div>` + 
+          suggestions.map(item => {
+            const termino = item[0];
+            return `<button class="search-result" style="padding: 12px;" onclick="document.getElementById('url-${deck}').value='${escapeHtml(termino)}'; closeSearchResults('${deck}'); alert('Término seleccionado. Haz clic en Cargar Deck para buscar el primer video.');">
+              <span>🔍 Buscar "${escapeHtml(termino)}" en YouTube</span>
+            </button>`;
+          }).join('');
+
+      } catch (error) {
+        results.innerHTML = `<div class="search-modal-header"><span>Aviso</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')" aria-label="Cerrar resultados">&times;</button></div><div style="padding: 10px;">La búsqueda automática requiere conexión estable. Copia y pega el link de YouTube directamente en la caja de texto.</div>`;
+      }
     }
 
     function renderSearchResults(deck, data) {
