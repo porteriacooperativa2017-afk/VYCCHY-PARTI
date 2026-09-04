@@ -559,8 +559,9 @@
     let historyReady = false;
     const cacheDatabase = openCacheDatabase();
     const configuredApiUrl = new URLSearchParams(window.location.search).get('api');
-    const searchApiUrl = configuredApiUrl || localStorage.getItem('vycchy-search-api') || '/api/search';
     const sheetApiUrl = new URLSearchParams(window.location.search).get('sheetApi') || localStorage.getItem('vycchy-sheet-api') || 'https://script.google.com/macros/s/AKfycbyrtzfN1c7h2nA7PxgOcrTIkdUmLTiwbtmnacfrS9KWjr4NLsmhTxKpkfrBFV-94eEr/exec';
+    const searchApiUrl = configuredApiUrl || localStorage.getItem('vycchy-search-api') || sheetApiUrl;
+    const playerOrigin = /^https?:$/.test(window.location.protocol) ? window.location.origin : '';
     const crossfaderSpeeds = {
       slow: { interval: 100, step: 1 },
       normal: { interval: 60, step: 2 },
@@ -575,11 +576,20 @@
     async function onYouTubeIframeAPIReady() {
       await restoreHistory();
       await restoreSheetHistory();
-      const playerVars = { controls: 1, origin: window.location.origin };
+      const playerVars = getPlayerVars();
       playerA = new YT.Player('player-a', { videoId: 'L_LUpnjgPso', playerVars });
       playerB = new YT.Player('player-b', { videoId: 'L_LUpnjgPso', playerVars });
       historyReady = true;
       if (!playlistHistory.length) addToHistory('L_LUpnjgPso', 'Fireplace Ambience', false);
+    }
+
+    function getPlayerVars() {
+      const playerVars = { controls: 1, enablejsapi: 1, playsinline: 1 };
+      if (playerOrigin) {
+        playerVars.origin = playerOrigin;
+        playerVars.widget_referrer = window.location.href;
+      }
+      return playerVars;
     }
 
     function openCacheDatabase() {
@@ -638,9 +648,10 @@
 
     function mergeSheetHistory(items) {
       items.slice().reverse().forEach(item => {
-        const videoId = extractVideoId(item.url || '');
+        const videoUrl = item.url || item.id || '';
+        const videoId = extractVideoId(videoUrl);
         if (!/^[A-Za-z0-9_-]{11}$/.test(videoId) || playlistHistory.some(existing => existing.videoId === videoId)) return;
-        playlistHistory.push({ videoId, title: escapeHtml(item.title || item.url) });
+        playlistHistory.push({ videoId, url: videoUrl, title: escapeHtml(item.title || videoId) });
       });
       playlistHistory.splice(12);
     }
@@ -651,12 +662,11 @@
         status.textContent = 'La hoja no está conectada: falta la URL de Apps Script.';
         return false;
       }
-      const url = `https://www.yout-ube.com/watch?v=${videoId}`;
       try {
         const response = await fetch(sheetApiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ url, title })
+          body: JSON.stringify({ url: `https://www.youtube.com/watch?v=${videoId}`, title })
         });
         if (!response.ok) throw new Error('Respuesta no válida');
         status.textContent = 'Guardado en Google Sheets.';
@@ -738,7 +748,7 @@
       document.getElementById('pending-title').focus();
     }
 
-    function savePendingVideo() {
+    async function savePendingVideo() {
       if (!pendingVideo) return;
       const titleInput = document.getElementById('pending-title');
       const title = titleInput.value.trim();
@@ -747,10 +757,17 @@
         return;
       }
       const { videoId, deck } = pendingVideo;
-      const videoUrl = `https://www.yout-ube.com/watch?v=${videoId}`;
-      if (deck !== 'playlist') document.getElementById(`url-${deck}`).value = videoUrl;
-      addToHistory(videoId, title);
-      saveToSheet(videoId, title);
+      const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      const saved = await saveToSheet(videoId, title);
+      if (!saved) return;
+      addToHistory(videoId, title, true, videoUrl);
+      if (deck === 'playlist') {
+        document.getElementById('url-a').value = videoUrl;
+        loadVideo('a', videoId, title);
+      } else {
+        document.getElementById(`url-${deck}`).value = videoUrl;
+        loadVideo(deck, videoId, title);
+      }
       pendingVideo = null;
       document.getElementById(`results-${deck}`).classList.remove('visible');
     }
@@ -777,12 +794,21 @@
         return;
       }
 
-      if (player && player.destroy) player.destroy();
+        if (player && player.loadVideoById) {
+          player.loadVideoById(videoId);
+          return;
+        }
 
       const newPlayer = new YT.Player(`player-${deck}`, {
         videoId,
-        playerVars: { controls: 1, origin: window.location.origin },
-        events: { onError: () => showUnavailableVideo(deck) }
+        playerVars: getPlayerVars(),
+        events: {
+          onReady: event => {
+            event.target.mute();
+            event.target.playVideo();
+          },
+          onError: event => handlePlayerError(deck, videoId, event.data)
+        }
       });
       if (deck === 'a') playerA = newPlayer;
       else playerB = newPlayer;
@@ -790,12 +816,23 @@
 
     function loadVideoFallback(deck, videoId) {
       const playerContainer = document.getElementById(`player-${deck}`);
-      playerContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?controls=1&playsinline=1" title="Reproductor de video" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
+      if (deck === 'a') playerA = null;
+      else playerB = null;
+        const referrer = playerOrigin ? `&origin=${encodeURIComponent(playerOrigin)}` : '';
+        playerContainer.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=0&controls=1&playsinline=1${referrer}" title="Reproductor de video" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; picture-in-picture" allowfullscreen></iframe>`;
     }
 
-    function addToHistory(videoId, title, persist = true) {
+    function handlePlayerError(deck, videoId, errorCode) {
+      if ([5, 153].includes(Number(errorCode))) {
+        loadVideoFallback(deck, videoId);
+        return;
+      }
+      showUnavailableVideo(deck, videoId);
+    }
+
+    function addToHistory(videoId, title, persist = true, url = `https://www.youtube.com/watch?v=${videoId}`) {
       if (playlistHistory.some(item => item.videoId === videoId)) return;
-      playlistHistory.unshift({ videoId, title: escapeHtml(title) });
+      playlistHistory.unshift({ videoId, url, title: escapeHtml(title) });
       playlistHistory.splice(12);
       renderPlaylist();
       if (historyReady) writeCache('history', { key: 'playlist', items: playlistHistory });
@@ -818,14 +855,16 @@
 
     function loadPlaylistItem(videoId, deck) {
       const item = playlistHistory.find(historyItem => historyItem.videoId === videoId);
-      document.getElementById(`url-${deck}`).value = `https://www.yout-ube.com/watch?v=${videoId}`;
-      loadVideo(deck, videoId, item?.title || 'Video del historial');
+      const title = item?.title || 'Video del historial';
+      const videoUrl = item?.url || `https://www.youtube.com/watch?v=${videoId}`;
+      document.getElementById(`url-${deck}`).value = videoUrl;
+      loadVideo(deck, extractVideoId(videoUrl), title);
     }
 
-    function showUnavailableVideo(deck) {
+    function showUnavailableVideo(deck, videoId) {
       const results = document.getElementById(`results-${deck}`);
       results.classList.add('visible');
-      results.insertAdjacentHTML('afterbegin', '<div style="padding: 10px; color: #ff8abf;">Este video no permite reproducción aquí. Selecciona otro resultado.</div>');
+      results.insertAdjacentHTML('afterbegin', `<div style="padding: 10px; color: #ff8abf;">Este video no permite reproducción incrustada. <a href="https://www.youtube.com/watch?v=${videoId}" target="_blank" rel="noopener">Abrir en YouTube</a>.</div>`);
     }
 
     function playVideo(deck) {
