@@ -244,7 +244,7 @@
       body { padding: 12px 24px; }
       h1 { font-size: 1.8rem; margin-bottom: 8px; }
       .brand-logo { width: 64px; margin-bottom: 6px; }
-      .master-bar, .playlist-panel, .mixer-container, .crossfader-panel { max-width: 1480px; }
+      .master-bar, .playlist-panel, .mixer-container, .crossfader-panel { max-width: 1100px; }
       .master-bar { padding: 10px 14px; margin-bottom: 12px; gap: 10px; }
       .playlist-panel { padding: 10px 14px; margin-bottom: 12px; }
       .mixer-container { gap: 12px; }
@@ -257,18 +257,34 @@
       .crossfader-panel { padding: 12px 18px; margin-top: 12px; }
     }
 
+    @media (min-width: 900px) and (min-height: 801px) {
+      body { justify-content: center; padding: 10px 20px; }
+      h1 { font-size: 1.55rem; margin-bottom: 6px; }
+      .brand-logo { width: 56px; margin-bottom: 4px; }
+      .master-bar, .playlist-panel, .mixer-container, .crossfader-panel { max-width: 1000px; }
+      .master-bar { padding: 8px 12px; margin-bottom: 8px; gap: 8px; }
+      .playlist-panel { padding: 8px 12px; margin-bottom: 8px; }
+      .mixer-container { gap: 10px; }
+      .deck { padding: 10px; }
+      .deck-layout { grid-template-columns: minmax(0, 1fr) minmax(180px, 0.6fr); gap: 10px; }
+      .deck-playlist { padding-left: 8px; }
+      .deck-playlist .playlist-list { max-height: 24vh; }
+      .video-wrapper, .controls { margin-bottom: 8px; }
+      .crossfader-panel { padding: 8px 12px; margin-top: 8px; }
+    }
+
     @media (min-width: 900px) and (max-height: 800px) {
       body {
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        align-content: start;
+        align-content: center;
         align-items: stretch;
         gap: 8px 12px;
         padding-bottom: 0;
       }
       body { padding-top: 8px; }
       .brand-logo { position: absolute; top: 8px; left: 24px; width: 44px; margin: 0; }
-      h1 { grid-column: 1 / -1; font-size: 1.45rem; margin: 2px 0 0; }
+      h1 { grid-column: 1 / -1; font-size: 1.45rem; margin: 2px 0 0; text-align: center; }
       .master-bar { grid-column: 1; flex-wrap: nowrap; justify-content: space-between; padding: 6px; margin: 0; gap: 6px; }
       .master-group { flex-wrap: nowrap; gap: 4px; white-space: nowrap; font-size: 0.75rem; }
       .master-bar .btn { padding: 6px 8px; font-size: 0.7rem; }
@@ -510,6 +526,79 @@
       -webkit-appearance: none;
       margin-top: -7px;
       box-shadow: 0 0 10px #fff;
+    }
+
+    @media (min-width: 900px) and (min-height: 801px) {
+      .crossfader-panel { max-width: 1000px; padding: 8px 12px; margin-top: 8px; }
+    }
+
+    @media (min-width: 900px) and (max-height: 800px) {
+      .mixer-container, .crossfader-panel { justify-self: center; }
+      .crossfader-panel { max-width: 1100px; padding: 4px 8px; margin: 0; }
+    }
+
+    @media (min-width: 560px) and (max-width: 720px) and (max-height: 700px) {
+      body {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-content: center;
+        align-items: stretch;
+        gap: 4px 8px;
+        min-height: 100vh;
+        padding: 4px;
+      }
+      .brand-logo { position: absolute; top: 4px; left: 8px; width: 28px; margin: 0; }
+      h1 { grid-column: 1 / -1; font-size: 1rem; margin: 0; letter-spacing: 0; text-align: center; }
+      .master-bar, .playlist-panel { width: 100%; max-width: none; margin: 0; padding: 4px; border-radius: 6px; }
+      .master-bar { grid-column: 1; flex-wrap: wrap; justify-content: center; gap: 2px; }
+      .master-group { flex-wrap: nowrap; gap: 3px; font-size: 0.6rem; }
+      .master-bar .btn, .playlist-panel .btn { padding: 4px; font-size: 0.6rem; }
+      .playlist-panel { grid-column: 2; }
+      .playlist-panel h2 { margin-bottom: 2px; font-size: 0.65rem; letter-spacing: 0; }
+      .playlist-panel .search-row { gap: 3px; margin-bottom: 0; }
+      .playlist-panel .url-input { min-width: 0; padding: 4px; margin: 0; font-size: 0.65rem; }
+      .mixer-container {
+        grid-column: 1 / -1;
+        justify-self: center;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 4px;
+        width: 100%;
+        max-width: 600px;
+      }
+      .deck { min-width: 0; width: auto; padding: 6px; border-radius: 8px; }
+      .deck-layout { grid-template-columns: 1fr; gap: 4px; }
+      .deck-layout > div:first-child { min-width: 0; }
+      .deck .search-row { gap: 3px; margin-bottom: 4px; }
+      .deck .url-input { min-width: 0; padding: 4px; margin-bottom: 4px; font-size: 0.65rem; }
+      .deck .btn { padding: 4px; font-size: 0.6rem; }
+      .deck .video-wrapper { margin-bottom: 4px; }
+      .deck .controls { gap: 4px; margin-bottom: 4px; }
+      .vol-control { gap: 4px; font-size: 0.65rem; }
+      .vol-control input[type=range] { min-width: 0; }
+      .vol-control input[type=range]::-webkit-slider-runnable-track { height: 7px; }
+      .vol-control input[type=range]::-webkit-slider-thumb { width: 10px; height: 16px; margin-top: -5px; }
+      .deck-playlist { min-width: 0; padding: 4px 0 0; border-left: 0; border-top: 1px solid #333; }
+      .deck-playlist summary { font-size: 0.6rem; }
+      .deck-playlist .playlist-list { max-height: 42px; margin-top: 3px; }
+      .deck-playlist .playlist-item { padding: 3px; }
+      .deck-playlist .playlist-title { font-size: 0.6rem; }
+      .deck-playlist .playlist-button { margin-top: 2px; }
+      .crossfader-panel {
+        grid-column: 1 / -1;
+        justify-self: center;
+        width: 100%;
+        max-width: 600px;
+        padding: 4px;
+        margin: 0;
+        border-radius: 8px;
+      }
+      .crossfader-panel > div:first-child { margin-bottom: 2px !important; font-size: 0.65rem; letter-spacing: 0; }
+      .crossfader-container { flex-wrap: nowrap; gap: 4px; }
+      .crossfader-container > span { font-size: 0.6rem; }
+      .crossfader-container input[type=range] { flex: 1; min-width: 70px; width: auto; }
+      .auto-crossfader-btn { min-width: 48px; padding: 4px; font-size: 0.6rem; }
+      .speed-select { padding: 4px; font-size: 0.6rem; }
     }
   </style>
 </head>
@@ -1032,11 +1121,11 @@
 
     function getRemoteKey(event) {
       const keyByCode = {
-        13: 'Enter', 19: 'ArrowUp', 20: 'ArrowDown', 21: 'ArrowLeft',
+        8: 'Back', 13: 'Enter', 19: 'ArrowUp', 20: 'ArrowDown', 21: 'ArrowLeft',
         22: 'ArrowRight', 23: 'Center', 27: 'Escape', 32: ' ',
         4: 'Back', 166: 'Back', 461: 'Back', 10009: 'Back'
       };
-      if (['BrowserBack', 'GoBack'].includes(event.key)) return 'Back';
+      if (['Backspace', 'BrowserBack', 'GoBack', 'XF86Back'].includes(event.key)) return 'Back';
       return keyByCode[event.keyCode] || event.key;
     }
 
@@ -1115,7 +1204,7 @@
       if (candidates.length) setRemoteTarget(candidates[0].element);
     }
 
-    document.addEventListener('keydown', event => {
+    window.addEventListener('keydown', event => {
       const key = getRemoteKey(event);
       const target = event.target;
       const isRange = target instanceof HTMLInputElement && target.type === 'range';
@@ -1143,7 +1232,7 @@
         return;
       }
 
-      if (isRange && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+      if (isRange && ['ArrowLeft', 'ArrowRight'].includes(key)) {
         const min = Number(target.min || 0);
         const max = Number(target.max || 100);
         const step = target.step === 'any' ? 1 : Number(target.step || 1);
@@ -1154,7 +1243,7 @@
         return;
       }
 
-      const keepsNativeEditing = isRange || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target.isContentEditable || (isTextEntry && (key === 'ArrowLeft' || key === 'ArrowRight'));
+      const keepsNativeEditing = target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target.isContentEditable || (isTextEntry && (key === 'ArrowLeft' || key === 'ArrowRight'));
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key) || keepsNativeEditing) return;
       moveRemoteFocus(key);
       event.preventDefault();
