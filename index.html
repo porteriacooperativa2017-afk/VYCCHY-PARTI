@@ -230,10 +230,75 @@
     .history-item img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; margin-bottom: 5px; }
     .history-item span { display: block; font-size: 0.76rem; line-height: 1.25; }
 
+    :focus-visible {
+      outline: 3px solid #fff;
+      outline-offset: 3px;
+      box-shadow: 0 0 0 6px rgba(0, 243, 255, 0.55);
+      position: relative;
+      z-index: 2;
+    }
+
+    button, summary, input, select { scroll-margin: 16px; }
+
+    @media (min-width: 900px) and (min-height: 650px) {
+      body { padding: 12px 24px; }
+      h1 { font-size: 1.8rem; margin-bottom: 8px; }
+      .brand-logo { width: 64px; margin-bottom: 6px; }
+      .master-bar, .playlist-panel, .mixer-container, .crossfader-panel { max-width: 1480px; }
+      .master-bar { padding: 10px 14px; margin-bottom: 12px; gap: 10px; }
+      .playlist-panel { padding: 10px 14px; margin-bottom: 12px; }
+      .mixer-container { gap: 12px; }
+      .deck { padding: 12px; }
+      .deck-layout { grid-template-columns: minmax(0, 1fr) minmax(190px, 0.62fr); gap: 12px; }
+      .deck-playlist { padding-left: 10px; }
+      .deck-playlist .playlist-list { max-height: 28vh; }
+      .video-wrapper { margin-bottom: 10px; }
+      .controls { margin-bottom: 10px; }
+      .crossfader-panel { padding: 12px 18px; margin-top: 12px; }
+    }
+
+    @media (min-width: 900px) and (max-height: 800px) {
+      body {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        align-content: start;
+        align-items: stretch;
+        gap: 8px 12px;
+        padding-bottom: 0;
+      }
+      body { padding-top: 8px; }
+      .brand-logo { position: absolute; top: 8px; left: 24px; width: 44px; margin: 0; }
+      h1 { grid-column: 1 / -1; font-size: 1.45rem; margin: 2px 0 0; }
+      .master-bar { grid-column: 1; flex-wrap: nowrap; justify-content: space-between; padding: 6px; margin: 0; gap: 6px; }
+      .master-group { flex-wrap: nowrap; gap: 4px; white-space: nowrap; font-size: 0.75rem; }
+      .master-bar .btn { padding: 6px 8px; font-size: 0.7rem; }
+      .playlist-panel { grid-column: 2; padding: 4px; margin: 0; }
+      .playlist-panel h2 { margin-bottom: 2px; }
+      .playlist-panel .search-row { margin-bottom: 2px; }
+      .playlist-panel .url-input { padding: 6px; }
+      .playlist-panel .btn { padding: 6px 8px; font-size: 0.7rem; }
+      .mixer-container, .crossfader-panel { grid-column: 1 / -1; }
+      .mixer-container { gap: 8px; }
+      .deck { padding: 10px; }
+      .video-wrapper, .controls { margin-bottom: 8px; }
+      .vol-control input[type=range] { flex: 1; min-width: 0; width: auto; }
+      .crossfader-panel { padding: 4px 8px; margin: 0; }
+      .crossfader-panel > div:first-child { margin-bottom: 4px !important; }
+      .crossfader-container { gap: 10px; }
+      .crossfader-container input[type=range] { flex: 1; min-width: 120px; width: auto; }
+    }
+
     @media (max-width: 720px) {
+      body { padding: 12px; }
+      h1 { font-size: 1.55rem; letter-spacing: 1px; text-align: center; }
+      .master-group { flex-wrap: wrap; justify-content: center; }
+      .master-bar { gap: 12px; }
+      .deck { min-width: 0; width: 100%; }
       .deck-playlist { padding: 12px 0 0; border-left: 0; border-top: 1px solid #333; }
       .deck-layout { grid-template-columns: 1fr; }
       .history-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 260px; }
+      .crossfader-container { flex-wrap: wrap; justify-content: center; }
+      .crossfader-container input[type=range] { flex: 1 1 100%; order: 1; }
     }
 
     .video-wrapper {
@@ -418,7 +483,7 @@
       background: transparent;
     }
 
-    input[type=range]:focus { outline: none; }
+    input[type=range]:focus { outline: 3px solid #fff; outline-offset: 4px; }
 
     input[type=range]::-webkit-slider-runnable-track {
       width: 100%;
@@ -714,6 +779,7 @@
       if (data.directVideo) {
         results.classList.add('visible');
         results.innerHTML = `<div class="search-modal-header"><span>Video encontrado</span><button class="search-modal-close" onclick="closeSearchResults('${deck}')">&times;</button></div><button class="search-result" onclick="selectSearchResult('${data.directVideo.videoId}', '${deck}', 'Video seleccionado')"><span>Guardar video ${data.directVideo.videoId}</span></button>`;
+        results.querySelector('.search-result')?.focus();
         return;
       }
       const items = data.contents?.twoColumnSearchResultsRenderer?.primaryContents
@@ -733,6 +799,7 @@
           <span>${escapeHtml(title)}</span>
         </button>`;
       }).join('');
+      results.querySelector('.search-result')?.focus();
     }
 
     function selectSearchResult(videoId, deck, title = 'Video seleccionado') {
@@ -953,6 +1020,79 @@
         button.textContent = 'AUTO';
       }
     }
+
+    function getRemoteKey(event) {
+      const keyByCode = {
+        13: 'Enter', 19: 'ArrowUp', 20: 'ArrowDown', 21: 'ArrowLeft',
+        22: 'ArrowRight', 23: 'Center', 27: 'Escape', 32: ' '
+      };
+      return keyByCode[event.keyCode] || event.key;
+    }
+
+    function getRemoteTargets() {
+      const visibleResults = [...document.querySelectorAll('.search-results.visible')];
+      const activeResults = visibleResults[visibleResults.length - 1];
+      const scope = activeResults || document;
+      return [...scope.querySelectorAll('button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), summary, a[href], [tabindex]:not([tabindex="-1"])')]
+        .filter(element => element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden');
+    }
+
+    function moveRemoteFocus(direction) {
+      const targets = getRemoteTargets();
+      if (!targets.length) return;
+      const current = document.activeElement;
+      if (!targets.includes(current)) {
+        (direction === 'ArrowUp' || direction === 'ArrowLeft' ? targets[targets.length - 1] : targets[0]).focus();
+        return;
+      }
+
+      const currentRect = current.getBoundingClientRect();
+      const currentX = currentRect.left + currentRect.width / 2;
+      const currentY = currentRect.top + currentRect.height / 2;
+      const candidates = targets.filter(element => element !== current).map(element => {
+        const rect = element.getBoundingClientRect();
+        const x = rect.left + rect.width / 2;
+        const y = rect.top + rect.height / 2;
+        const dx = x - currentX;
+        const dy = y - currentY;
+        const isInDirection = direction === 'ArrowRight' ? dx > 2
+          : direction === 'ArrowLeft' ? dx < -2
+          : direction === 'ArrowDown' ? dy > 2 : dy < -2;
+        const primary = direction === 'ArrowLeft' || direction === 'ArrowRight' ? Math.abs(dx) : Math.abs(dy);
+        const secondary = direction === 'ArrowLeft' || direction === 'ArrowRight' ? Math.abs(dy) : Math.abs(dx);
+        return { element, score: primary + secondary * 2.5, isInDirection };
+      }).filter(candidate => candidate.isInDirection).sort((a, b) => a.score - b.score);
+
+      if (candidates.length) candidates[0].element.focus();
+    }
+
+    document.addEventListener('keydown', event => {
+      const key = getRemoteKey(event);
+      const target = event.target;
+      const isRange = target instanceof HTMLInputElement && target.type === 'range';
+      const isTextEntry = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target.isContentEditable;
+
+      if (key === 'Escape' && document.querySelector('.search-results.visible')) {
+        const visibleResults = [...document.querySelectorAll('.search-results.visible')];
+        const openResults = visibleResults[visibleResults.length - 1];
+        const deck = openResults.id.replace('results-', '');
+        closeSearchResults(deck);
+        document.getElementById(`search-${deck}`)?.focus();
+        event.preventDefault();
+        return;
+      }
+
+      if (key === 'Center' && target instanceof HTMLElement && target.matches('button, summary, a[href]')) {
+        target.click();
+        event.preventDefault();
+        return;
+      }
+
+      const keepsNativeEditing = isRange || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target.isContentEditable || (isTextEntry && (key === 'ArrowLeft' || key === 'ArrowRight'));
+      if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key) || keepsNativeEditing) return;
+      moveRemoteFocus(key);
+      event.preventDefault();
+    }, true);
   </script>
 </body>
 </html>
