@@ -1151,7 +1151,7 @@
       const visibleResults = [...document.querySelectorAll('.search-results.visible')];
       const activeResults = visibleResults[visibleResults.length - 1];
       const scope = activeResults || document;
-      return [...scope.querySelectorAll('button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), summary, a[href], [tabindex]:not([tabindex="-1"])')]
+      return [...scope.querySelectorAll('button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), summary, a[href], iframe:not([tabindex="-1"]), [tabindex]:not([tabindex="-1"])')]
         .filter(element => element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden');
     }
 
