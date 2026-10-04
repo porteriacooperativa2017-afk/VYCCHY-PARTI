@@ -329,6 +329,14 @@
       outline: none;
     }
 
+    [data-remote-highlight] {
+      outline: 3px solid #fff;
+      outline-offset: 3px;
+      box-shadow: 0 0 0 6px rgba(0, 243, 255, 0.55);
+      position: relative;
+      z-index: 2;
+    }
+
     .search-row {
       display: flex;
       gap: 8px;
@@ -621,6 +629,7 @@
     let autoCrossfaderDirection = 1;
     const playlistHistory = [];
     let pendingVideo = null;
+    let remoteFocusTarget = null;
     let historyReady = false;
     const cacheDatabase = openCacheDatabase();
     const configuredApiUrl = new URLSearchParams(window.location.search).get('api');
@@ -1037,11 +1046,16 @@
         const openResults = visibleResults[visibleResults.length - 1];
         const deck = openResults.id.replace('results-', '');
         closeSearchResults(deck);
-        document.getElementById(`search-${deck}`)?.focus();
+        const searchField = document.getElementById(`search-${deck}`);
+        if (searchField) setRemoteTarget(searchField);
         return;
       }
 
-      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
+      const activeElement = document.activeElement;
+      if (activeElement instanceof HTMLElement) {
+        if (isRemoteTextField(activeElement)) setRemoteTarget(activeElement);
+        else activeElement.blur();
+      }
     }
 
     function getRemoteTargets() {
@@ -1052,12 +1066,32 @@
         .filter(element => element.getClientRects().length && getComputedStyle(element).visibility !== 'hidden');
     }
 
+    function isRemoteTextField(element) {
+      return element instanceof HTMLInputElement && ['text', 'search', 'url', 'email', 'password', 'tel'].includes(element.type);
+    }
+
+    function setRemoteTarget(element) {
+      if (remoteFocusTarget) remoteFocusTarget.removeAttribute('data-remote-highlight');
+      remoteFocusTarget = null;
+
+      const activeElement = document.activeElement;
+      if (isRemoteTextField(element)) {
+        if (activeElement instanceof HTMLElement) activeElement.blur();
+        remoteFocusTarget = element;
+        element.setAttribute('data-remote-highlight', '');
+        return;
+      }
+
+      if (activeElement instanceof HTMLElement && activeElement !== element) activeElement.blur();
+      element.focus();
+    }
+
     function moveRemoteFocus(direction) {
       const targets = getRemoteTargets();
       if (!targets.length) return;
-      const current = document.activeElement;
+      const current = remoteFocusTarget || document.activeElement;
       if (!targets.includes(current)) {
-        (direction === 'ArrowUp' || direction === 'ArrowLeft' ? targets[targets.length - 1] : targets[0]).focus();
+        setRemoteTarget(direction === 'ArrowUp' || direction === 'ArrowLeft' ? targets[targets.length - 1] : targets[0]);
         return;
       }
 
@@ -1078,7 +1112,7 @@
         return { element, score: primary + secondary * 2.5, isInDirection };
       }).filter(candidate => candidate.isInDirection).sort((a, b) => a.score - b.score);
 
-      if (candidates.length) candidates[0].element.focus();
+      if (candidates.length) setRemoteTarget(candidates[0].element);
     }
 
     document.addEventListener('keydown', event => {
@@ -1091,6 +1125,15 @@
         handleAppBack();
         event.preventDefault();
         event.stopPropagation();
+        return;
+      }
+
+      if ((key === 'Center' || key === 'Enter') && remoteFocusTarget) {
+        const textField = remoteFocusTarget;
+        textField.removeAttribute('data-remote-highlight');
+        remoteFocusTarget = null;
+        textField.focus();
+        event.preventDefault();
         return;
       }
 
