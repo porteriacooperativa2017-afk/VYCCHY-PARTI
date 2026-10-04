@@ -1024,9 +1024,24 @@
     function getRemoteKey(event) {
       const keyByCode = {
         13: 'Enter', 19: 'ArrowUp', 20: 'ArrowDown', 21: 'ArrowLeft',
-        22: 'ArrowRight', 23: 'Center', 27: 'Escape', 32: ' '
+        22: 'ArrowRight', 23: 'Center', 27: 'Escape', 32: ' ',
+        4: 'Back', 166: 'Back', 461: 'Back', 10009: 'Back'
       };
+      if (['BrowserBack', 'GoBack'].includes(event.key)) return 'Back';
       return keyByCode[event.keyCode] || event.key;
+    }
+
+    function handleAppBack() {
+      const visibleResults = [...document.querySelectorAll('.search-results.visible')];
+      if (visibleResults.length) {
+        const openResults = visibleResults[visibleResults.length - 1];
+        const deck = openResults.id.replace('results-', '');
+        closeSearchResults(deck);
+        document.getElementById(`search-${deck}`)?.focus();
+        return;
+      }
+
+      if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
     }
 
     function getRemoteTargets() {
@@ -1072,13 +1087,10 @@
       const isRange = target instanceof HTMLInputElement && target.type === 'range';
       const isTextEntry = target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target.isContentEditable;
 
-      if (key === 'Escape' && document.querySelector('.search-results.visible')) {
-        const visibleResults = [...document.querySelectorAll('.search-results.visible')];
-        const openResults = visibleResults[visibleResults.length - 1];
-        const deck = openResults.id.replace('results-', '');
-        closeSearchResults(deck);
-        document.getElementById(`search-${deck}`)?.focus();
+      if (key === 'Back' || key === 'Escape') {
+        handleAppBack();
         event.preventDefault();
+        event.stopPropagation();
         return;
       }
 
@@ -1088,11 +1100,28 @@
         return;
       }
 
+      if (isRange && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key)) {
+        const min = Number(target.min || 0);
+        const max = Number(target.max || 100);
+        const step = target.step === 'any' ? 1 : Number(target.step || 1);
+        const direction = key === 'ArrowRight' || key === 'ArrowUp' ? 1 : -1;
+        target.value = String(Math.max(min, Math.min(max, Number(target.value) + direction * step)));
+        target.dispatchEvent(new Event('input', { bubbles: true }));
+        event.preventDefault();
+        return;
+      }
+
       const keepsNativeEditing = isRange || target instanceof HTMLSelectElement || target instanceof HTMLTextAreaElement || target.isContentEditable || (isTextEntry && (key === 'ArrowLeft' || key === 'ArrowRight'));
       if (!['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(key) || keepsNativeEditing) return;
       moveRemoteFocus(key);
       event.preventDefault();
     }, true);
+
+    history.pushState({ vycchyApp: true }, '', window.location.href);
+    window.addEventListener('popstate', () => {
+      handleAppBack();
+      history.pushState({ vycchyApp: true }, '', window.location.href);
+    });
   </script>
 </body>
 </html>
